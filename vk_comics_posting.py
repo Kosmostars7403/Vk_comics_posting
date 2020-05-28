@@ -8,8 +8,9 @@ def download_random_comic():
     url = 'https://xkcd.com/{}/info.0.json'.format(comic_number)
     response = requests.get(url)
     response.raise_for_status()
-    image_url = response.json()['img']
-    comment = response.json()['alt']
+    comic_information = response.json()
+    image_url = comic_information['img']
+    comment = comic_information['alt']
     image = requests.get(image_url)
     with open('random_comic.png', 'wb') as file:
         file.write(image.content)
@@ -45,9 +46,10 @@ def upload_on_vk_server(upload_url):
         }
         response = requests.post(url, files=files)
         response.raise_for_status()
-    response_server = response.json()['server']
-    response_photo = response.json()['photo']
-    response_hash = response.json()['hash']
+        upload_response = response.json()
+    response_server = upload_response['server']
+    response_photo = upload_response['photo']
+    response_hash = upload_response['hash']
     return response_server, response_photo, response_hash
 
 
@@ -63,8 +65,9 @@ def save_photo_to_album(upload_data):
     }
 
     response = requests.post(url, params=payrole)
-    owner_id = response.json()['response'][0]['owner_id']
-    media_id = response.json()['response'][0]['id']
+    media_information = response.json()
+    owner_id = media_information['response'][0]['owner_id']
+    media_id = media_information['response'][0]['id']
     return owner_id, media_id
 
 
