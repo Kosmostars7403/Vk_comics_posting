@@ -3,6 +3,11 @@ import os
 import random
 from dotenv import load_dotenv
 
+
+def check_response_for_errors(response_json):
+    if 'error' in response_json:
+        raise requests.exceptions.HTTPError(response_json['error'])
+
 def download_random_comic():
     comic_number = get_random_number_of_comic()
     url = 'https://xkcd.com/{}/info.0.json'.format(comic_number)
@@ -32,9 +37,9 @@ def get_wall_upload_server():
         'v': api_version,
         'group_id': group_id
     }
-    response = requests.get(url, params=payrole)
-    response.raise_for_status()
-    upload_url = response.json()['response']['upload_url']
+    response = requests.get(url, params=payrole).json()
+    check_response_for_errors(response)
+    upload_url = response['response']['upload_url']
     return upload_url
 
 
@@ -44,12 +49,11 @@ def upload_on_vk_server(upload_url):
         files = {
             'photo': file,
         }
-        response = requests.post(url, files=files)
-        response.raise_for_status()
-        upload_response = response.json()
-    response_server = upload_response['server']
-    response_photo = upload_response['photo']
-    response_hash = upload_response['hash']
+        response = requests.post(url, files=files).json()
+        check_response_for_errors(response)
+    response_server = response['server']
+    response_photo = response['photo']
+    response_hash = response['hash']
     return response_server, response_photo, response_hash
 
 
@@ -64,10 +68,10 @@ def save_photo_to_album(upload_data):
         'hash': upload_data[2]
     }
 
-    response = requests.post(url, params=payrole)
-    media_information = response.json()
-    owner_id = media_information['response'][0]['owner_id']
-    media_id = media_information['response'][0]['id']
+    response = requests.post(url, params=payrole).json()
+    check_response_for_errors(response)
+    owner_id = response['response'][0]['owner_id']
+    media_id = response['response'][0]['id']
     return owner_id, media_id
 
 
@@ -82,7 +86,8 @@ def post_to_group_wall(photo_id):
         'message': comment
     }
 
-    response = requests.post(url, params=payrole)
+    response = requests.post(url, params=payrole).json()
+    check_response_for_errors(response)
 
 
 if __name__ == '__main__':
@@ -90,12 +95,12 @@ if __name__ == '__main__':
     vk_user_token = os.getenv('VK_USER_TOKEN')
     api_version = os.getenv('API_VERSION')
     group_id = os.getenv('GROUP_ID')
-    
-    comment = download_random_comic()
 
-    upload_url = get_wall_upload_server()
-    upload_data = upload_on_vk_server(upload_url)
-    photo_id = save_photo_to_album(upload_data)
-    post_to_group_wall(photo_id)
-
-    os.remove('random_comic.png')
+    try:
+        comment = download_random_comic()
+        upload_url = get_wall_upload_server()
+        upload_data = upload_on_vk_server(upload_url)
+        photo_id = save_photo_to_album(upload_data)
+        post_to_group_wall(photo_id)
+    finally:
+        os.remove('random_comic.png')
