@@ -4,9 +4,9 @@ import random
 from dotenv import load_dotenv
 
 
-def check_response_for_errors(response_json):
-    if 'error' in response_json:
-        raise requests.exceptions.HTTPError(response_json['error'])
+def check_response_for_errors(response):
+    if 'error' in response:
+        raise requests.exceptions.HTTPError(response['error'])
 
 def download_random_comic():
     comic_number = get_random_number_of_comic()
